@@ -1,70 +1,54 @@
 package app.ui;
 
+import app.service.SettingsService;
+
 import javax.swing.*;
 import java.awt.*;
+import java.util.Properties;
 
 public class MainFrame extends JFrame {
-
-    private final JTabbedPane tabbedPane;
-
-    private final LogsPanel logsPanel;
-    private final SettingsPanel settingsPanel;
-    private final LaunchPanel launchPanel;
 
     public MainFrame() {
 
         setTitle("Publisher");
-
-        setSize(700, 500);
-
+        setSize(700, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
         setLocationRelativeTo(null);
 
-        tabbedPane = new JTabbedPane();
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(new Font("Arial", Font.BOLD, 18));
 
-    /*
-        BIGGER TAB FONT
-     */
+        // 1. Independent panels
+        LogsPanel     logsPanel     = new LogsPanel();
+        StartPanel    startPanel    = new StartPanel();
+        AdvancedPanel advancedPanel = new AdvancedPanel();
+        SignPanel     signPanel     = new SignPanel(logsPanel);
 
-        tabbedPane.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        18
-                )
-        );
+        // 2. SettingsPanel needs the above
+        SettingsPanel settingsPanel = new SettingsPanel(
+                logsPanel, advancedPanel, startPanel);
 
-        logsPanel = new LogsPanel();
+        // 3. Wire SignPanel into SettingsPanel for auto-sign after publish
+        settingsPanel.setSignPanel(signPanel);
 
-        settingsPanel = new SettingsPanel();
+        // 4. Wire StartPanel <-> LogsPanel for progress tracking
+        logsPanel.setStartPanel(startPanel);
 
-        launchPanel = new LaunchPanel(
-                logsPanel,
-                settingsPanel,
-                tabbedPane
-        );
+        // 5. Apply saved settings
+        Properties saved = SettingsService.load();
+        advancedPanel.applySettings(saved);
+        signPanel.applySettings(saved);
 
-        tabbedPane.addTab(
-                "Launch",
-                launchPanel
-        );
-
-        tabbedPane.addTab(
-                "Settings",
-                settingsPanel
-        );
-
-        tabbedPane.addTab(
-                "Logs",
-                logsPanel
-        );
+        // Tab order: Start | Settings | Advanced | Sign | Logs
+        tabbedPane.addTab("Start",    startPanel);
+        tabbedPane.addTab("Settings", settingsPanel);
+        tabbedPane.addTab("Advanced", advancedPanel);
+        tabbedPane.addTab("Sign",     signPanel);
+        tabbedPane.addTab("Logs",     logsPanel);
 
         setLayout(new BorderLayout());
-
         add(tabbedPane, BorderLayout.CENTER);
 
         setVisible(true);
     }
-
 }
